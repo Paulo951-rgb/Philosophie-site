@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="sombre">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Le Grand Philosophe — transforme vos banalités en traités de métaphysique">
+<title>Le Grand Philosophe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<header class="topnav">
+  <a class="brand" href="/" data-route>
+    <span class="brand-seal">◆</span>
+    <span class="brand-name">Le&nbsp;Grand&nbsp;Philosophe</span>
+  </a>
+  <nav class="navlinks">
+    <a href="/histoire" data-route>Histoire</a>
+    <a href="/favoris" data-route>Favoris</a>
+    <a href="/a-propos" data-route>À propos</a>
+    <a href="/parametres" data-route class="nav-icon" title="Paramètres">⚙</a>
+    <button id="theme-toggle" class="theme-toggle" title="Basculer le thème" aria-label="Basculer le thème">☾</button>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- ============================================================ GÉNÉRATEUR -->
+  <section id="view-home" class="view">
+    <div class="hero">
+      <h1 class="hero-title">Élevez le banal au rang du <em>trop-profond</em>.</h1>
+      <p class="hero-sub">Une seule phrase, dix siècles de gravité.</p>
+    </div>
+
+    <div class="input-zone">
+      <label class="zone-label" for="input-text">Votre phrase</label>
+      <div class="input-shell">
+        <textarea id="input-text" rows="3" placeholder=""></textarea>
+        <div class="input-tools">
+          <button class="tool-btn" id="btn-paste" title="Coller">⧉</button>
+          <button class="tool-btn" id="btn-clear" title="Effacer">✕</button>
+        </div>
+      </div>
+      <div class="input-meta">
+        <span id="char-count">0 / 2000</span>
+        <span id="char-warn" hidden>Texte long — la réflexion sera magistrale.</span>
+      </div>
+      <p class="examples">
+        Exemples : <a href="#" class="ex">« J'ai faim. »</a> <a href="#" class="ex">« Le bus est en retard. »</a> <a href="#" class="ex">« Mon chat dort toute la journée. »</a>
+      </p>
+    </div>
+
+    <details id="params" class="params" open>
+      <summary>Panneau des puissances <span id="profile-summary"></span></summary>
+      <div class="params-grid">
+        <div class="param">
+          <label for="p-depth">Profondeur</label>
+          <select id="p-depth">
+            <option value="legere">Légèrement profond</option>
+            <option value="profond">Profond</option>
+            <option value="tres-profond">Très profond</option>
+            <option value="metaphysique">Absolument métaphysique</option>
+          </select>
+        </div>
+        <div class="param">
+          <label for="p-exaggeration">Exagération</label>
+          <select id="p-exaggeration">
+            <option value="serieux">Sérieux</option>
+            <option value="subtile">Subtilement absurde</option>
+            <option value="dramatique">Très dramatique</option>
+            <option value="caricatural">Complètement caricatural</option>
+            <option value="trop-serieux">Prend beaucoup trop au sérieux</option>
+          </select>
+        </div>
+        <div class="param">
+          <label for="p-length">Longueur</label>
+          <select id="p-length">
+            <option value="court">Court (~50 mots)</option>
+            <option value="moyen">Moyen (~150 mots)</option>
+            <option value="long">Long (~350 mots)</option>
+            <option value="tres-long">Très long (~700 mots)</option>
+            <option value="pqdm">« Pourquoi ai-je demandé ça ? » (~1500 mots)</option>
+          </select>
+        </div>
+        <div class="param">
+          <label for="p-complexity">Complexité</label>
+          <select id="p-complexity">
+            <option value="simple">Simple</option>
+            <option value="soutenu">Soutenu</option>
+            <option value="tres-soutenu">Très soutenu</option>
+            <option value="intimidant">Intellectuellement intimidant</option>
+            <option value="pompeux">Complètement pompeux</option>
+          </select>
+        </div>
+        <div class="param param-mode">
+          <label for="p-mode">Mode</label>
+          <select id="p-mode">
+            <option value="standard">Réflexion libre</option>
+            <option value="dissertation">Dissertation</option>
+            <option value="citation">Citation philosophique</option>
+          </select>
+        </div>
+        <div class="param param-styles">
+          <label>Style(s) <span class="hint">(max 2)</span></label>
+          <div id="style-picker" class="style-picker"></div>
+        </div>
+      </div>
+      <p id="profile-recap" class="profile-recap"></p>
+    </details>
+
+    <button id="btn-generate" class="btn-primary">Philosopher</button>
+    <p class="altlabels" hidden>Élever cette pensée — Méditer là-dessus</p>
+
+    <!-- ------------------------------ résultat ------------------------------ -->
+    <section id="result-zone" class="result-zone" hidden>
+      <h2 class="result-label">La Grande Réflexion</h2>
+      <article class="book-page" aria-live="polite">
+        <div id="result-container">
+          <p id="result-text" class="result-text"></p>
+          <p id="result-attribution" class="result-attribution" hidden></p>
+          <div class="page-divider">❦</div>
+        </div>
+      </article>
+      <div class="action-bar">
+        <button class="act" id="act-copy" title="Copier le texte">Copier</button>
+        <button class="act" id="act-regen" title="Régénérer">Régénérer</button>
+        <button class="act" id="act-params" title="Modifier les paramètres">Modifier les paramètres</button>
+        <button class="act" id="act-export" title="Exporter en carte">Exporter en carte</button>
+        <div class="magic-wrap">
+          <button class="act act-gold" id="act-magic" title="Pousser plus loin">Pousser plus loin ▾</button>
+          <div id="magic-menu" class="magic-menu" hidden></div>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ============================================================ HISTOIRE -->
+  <section id="view-histoire" class="view" hidden>
+    <h2 class="page-title">Histoire des générations</h2>
+    <div class="history-tools">
+      <input id="history-search" type="search" placeholder="Recherche sur texte original et généré…">
+      <select id="history-style"></select>
+      <button id="history-clear" class="btn-ghost">Vider l'historique</button>
+    </div>
+    <div id="history-list" class="history-list"></div>
+    <p id="history-empty" class="empty" hidden>Rien encore. Le portique attend votre première banalité.</p>
+  </section>
+
+  <!-- ============================================================ FAVORIS -->
+  <section id="view-favoris" class="view" hidden>
+    <h2 class="page-title">Favoris</h2>
+    <div class="history-tools">
+      <input id="fav-search" type="search" placeholder="Recherche dans les favoris…">
+      <select id="fav-style"></select>
+      <button id="fav-gallery" class="btn-ghost">🖼 vue galerie</button>
+    </div>
+    <div id="fav-list" class="history-list"></div>
+    <div id="fav-gallery-zone" class="gallery-zone" hidden></div>
+    <p id="fav-empty" class="empty" hidden>Aucun favori. L'étoile dorée attend.</p>
+  </section>
+
+  <!-- ============================================================ À PROPOS -->
+  <section id="view-a-propos" class="view" hidden>
+    <h2 class="page-title">Le cabinet</h2>
+    <div class="prose">
+      <p><em>Le Grand Philosophe</em> transforme vos banalités quotidiennes en
+      réflexions exagérément graves, finement pompeuses, savoureusement
+      prétentieuses. Le comique repose sur le contraste : plus l'entrée est
+      menu, plus la sortie est solennelle.</p>
+      <h3>Avertissement</h3>
+      <p>Toute attribution générée par le mode « Citation » est <strong>forcément
+      fictive</strong> — le moteur n'assigne jamais un texte à un vrai philosophe
+      ni à une personne réelle. Si vous partagez une carte, un badge l'indique.</p>
+      <h3>En pensée</h3>
+      <p>Fonctions à venir (V2) : Duel entre deux styles, Portrait du philosophe,
+      lecture dramatique audio, philosophie du jour, badges absurdes,
+      mode Débat, générateur de titres d'essais, extension navigateur.</p>
+      <h3>Technique</h3>
+      <p>Génération procédurale multistyle (aucune clé d'API externe nécessaire),
+      historique local sur votre seul appareil, cartes rendues par canvas et
+      par le serveur (Pillow) pour l'aperçu Open Graph.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ PARAMÈTRES -->
+  <section id="view-parametres" class="view" hidden>
+    <h2 class="page-title">Paramètres</h2>
+    <div class="params-page">
+      <div class="param">
+        <label for="s-theme">Thème</label>
+        <select id="s-theme">
+          <option value="sombre">Sombre (défaut)</option>
+          <option value="clair">Clair</option>
+          <option value="auto">Auto (système)</option>
+        </select>
+      </div>
+      <div class="param">
+        <label for="s-save-defaults">Réglages par défaut du panneau de génération</label>
+        <button id="btn-save-defaults" class="btn-ghost">Mémoriser mes choix actuels</button>
+      </div>
+      <p class="hint">L'historique est conservé sur cet appareil uniquement.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ------------------------------ overlay génération ----------------------- -->
+<div id="generation-veil" class="veil" hidden>
+  <div class="veil-inner">
+    <div class="seal-pulse">◆</div>
+    <p id="veil-phrase">Consultation des ombres de la caverne…</p>
+    <p id="veil-long" class="veil-long" hidden>Le sage prend son temps ; l'encre n'en sera que plus noire.</p>
+  </div>
+</div>
+
+<!-- ------------------------------ card modal ------------------------------- -->
+<div id="card-modal" class="card-modal" hidden>
+  <div class="card-modal-inner">
+    <button class="modal-close" id="card-close">✕</button>
+    <div class="card-head">
+      <select id="card-format">
+        <option value="story">Story (1080×1920)</option>
+        <option value="square">Post carré (1080×1080)</option>
+        <option value="landscape">Paysage (1200×630)</option>
+      </select>
+    </div>
+    <canvas id="card-canvas"></canvas>
+    <div class="card-actions">
+      <button id="card-download" class="act act-gold">Télécharger PNG</button>
+      <button id="card-copy" class="act">Copier l'image</button>
+      <button id="card-share" class="act" hidden>Partager</button>
+      <button id="card-publish" class="act">Publier un lien</button>
+    </div>
+  </div>
+</div>
+
+<footer class="foot">
+  <p>© 2026 Le Grand Philosophe — l'absolu, en version banale.</p>
+</footer>
+
+<script type="module" src="/static/js/history.js"></script>
+<script type="module" src="/static/js/cards.js"></script>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
