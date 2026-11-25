@@ -122,6 +122,7 @@ def api_generate(req: GenerateRequest):
             "complexity": req.complexity,
         },
         "word_count": result["word_count"],
+        "engine": result.get("engine", "llm"),
     }
 
 
