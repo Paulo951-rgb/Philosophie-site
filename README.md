@@ -103,3 +103,16 @@ Aucun texte généré n'est attribué à un vrai philosophe ni à une personne
 réelle ; le filtre `safety.py` supprime tout nom réel même s'il apparaît dans
 l'entrée utilisateur. Les cartes du mode Citation portent un badge
 « citation humoristique · attribution fictive ».
+
+
+## IA cloud (configuration recommandée pour un hébergement web)
+
+Le site accepte un fournisseur d'IA compatible avec l'API OpenAI. Groq est le fournisseur par défaut :
+
+- `AI_API_KEY` : clé API secrète créée sur https://console.groq.com/keys
+- `AI_BASE_URL` : `https://api.groq.com/openai/v1`
+- `AI_MODEL` : `openai/gpt-oss-120b`
+
+Définissez ces variables dans les secrets/variables d'environnement de l'hébergeur FastAPI. **Ne mettez jamais la clé dans le JavaScript, dans le dépôt Git ou dans une variable publique du frontend.**
+
+Le forfait gratuit de Groq est limité par des quotas de requêtes et de tokens : aucune API gratuite n'est illimitée. Quand une API cloud est configurée, une erreur du fournisseur (clé invalide, modèle indisponible, quota dépassé) renvoie une erreur HTTP 503 explicite ; elle ne déclenche pas le faux générateur procédural. Sans clé cloud, le fonctionnement local historique reste disponible.
