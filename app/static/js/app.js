@@ -214,12 +214,12 @@ async function generate(input) {
       body: JSON.stringify({ input_text: input, ...params }),
     });
     hideVeil();
-    if (!res.ok) throw new Error(`generation ${res.status}`);
     const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `Erreur IA (${res.status})`);
     setResult({ input, text: data.text, attribution: data.attribution, params, mode: params.mode });
   } catch (e) {
     hideVeil();
-    alert("La matière n'a pu se composer : veuillez réessayer.");
+    alert(e.message || "La génération IA a échoué. Vérifiez la configuration du fournisseur.");
   }
 }
 
@@ -238,12 +238,12 @@ async function transform(action) {
       }),
     });
     hideVeil();
-    if (!res.ok) throw new Error(`transform ${res.status}`);
     const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `Erreur IA (${res.status})`);
     setResult({ ...state.current, text: data.text });
   } catch (e) {
     hideVeil();
-    alert("La transformation est tombée en aporie.");
+    alert(e.message || "La transformation IA a échoué. Réessayez.");
   }
 }
 
