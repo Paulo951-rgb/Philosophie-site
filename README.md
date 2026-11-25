@@ -42,16 +42,12 @@ jamais de résultat à la place de l'IA.
 git clone https://github.com/Paulo951-rgb/Philosophie-site.git
 cd Philosophie-site
 pip install -r requirements.txt
-./start.sh    # démarre le modèle local (port 8090) + l'app (port 12000)
+./start.sh    # démarre l'app (port 12000), IA cloud par défaut
 ```
 
 ### Dépendances système
 
-Le moteur LLM utilise un binaire llama.cpp compilé pour la machine cible :
-`télécharger/compilez llama.cpp` puis posez le binaire où vous voulez.
-Le modèle GGUF attendu par défaut est **Qwen2.5-3B-Instruct** (Q4_K_M) ;
-tout autre GGUF compatible fonctionne (prendre un modèle léger si priorité
-vitesse).
+En mode cloud (par défaut), Python et les dépendances de `requirements.txt` suffisent : aucun binaire llama.cpp ni fichier GGUF n'est requis. Pour utiliser volontairement le mode local, définissez `AI_PROVIDER=local`, installez llama.cpp et fournissez un modèle GGUF compatible.
 
 ### Variables de configuration
 
