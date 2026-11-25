@@ -9,6 +9,7 @@ sur le moteur procédural.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 
@@ -16,7 +17,13 @@ import httpx
 
 from .safety import contains_real_philosopher, scrub
 
-LLM_URL = "http://127.0.0.1:8090"
+# API cloud OpenAI-compatible (Groq par défaut) ou llama.cpp local.
+# La clé reste exclusivement côté serveur : ne jamais l'exposer au frontend.
+LLM_URL = os.getenv("LLM_URL", "http://127.0.0.1:8090").rstrip("/")
+AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b").strip()
+_USE_CLOUD = bool(AI_API_KEY)
 _HEALTH_TTL = 15.0  # secondes entre deux sondes de santé
 
 _health_ok: float | None = None  # timestamp du dernier état connu
@@ -221,7 +228,9 @@ def build_transform_prompt(
 
 
 def llm_available() -> bool:
-    """Sonde le serveur local (résultat mis en cache quelques secondes)."""
+    """Indique si un fournisseur cloud est configuré ou si le modèle local répond."""
+    if _USE_CLOUD:
+        return True
     global _health_ok, _health_state
     now = time.monotonic()
     if _health_ok is not None and now - _health_ok < _HEALTH_TTL:
@@ -246,12 +255,19 @@ def _chat(system: str, user: str, max_tokens: int, temperature: float,
         "temperature": temperature,
         "stream": False,
     }
+    if _USE_CLOUD:
+        payload["model"] = AI_MODEL
+        url = f"{AI_BASE_URL}/chat/completions"
+        headers = {"Authorization": f"Bearer {AI_API_KEY}"}
+    else:
+        url = f"{LLM_URL}/v1/chat/completions"
+        headers = {}
     try:
-        r = httpx.post(f"{LLM_URL}/v1/chat/completions", json=payload,
-                       timeout=timeout)
+        r = httpx.post(url, json=payload, headers=headers, timeout=timeout)
         r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-    except (httpx.HTTPError, KeyError, ValueError):
+        content = r.json()["choices"][0]["message"]["content"]
+        return content if isinstance(content, str) else None
+    except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
         return None
 
 
