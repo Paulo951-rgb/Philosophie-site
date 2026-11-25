@@ -53,3 +53,13 @@
   L'authentification n'est PAS implémentée (historique local choisi).
 - V2 non implémentée (Duel, Portrait, audio, débat, etc.) — pistes listées
   sur la page À propos.
+
+
+## Fournisseur IA cloud par défaut (25/11/2026)
+
+- Le mode par défaut est `AI_PROVIDER=cloud`, via LLM Faucet (`AI_BASE_URL=https://api.llmfaucet.dev/v1`, `AI_MODEL=auto:smart`, auth publique `free`).
+- Aucune clé personnelle ni modèle local n'est requis pour le déploiement cloud.
+- Le quota anonyme publié est de 20 requêtes/jour/IP et le service est expérimental : ne pas promettre une disponibilité/illimitation.
+- En cas d'échec cloud, `engine.py` doit renvoyer HTTP 503 et ne jamais utiliser le moteur procédural.
+- `AI_PROVIDER=local` est une option explicite pour llama.cpp ; le mode cloud reste le défaut.
+- Les tests hermétiques forcent temporairement `llm._USE_CLOUD=False` et le serveur local indisponible.

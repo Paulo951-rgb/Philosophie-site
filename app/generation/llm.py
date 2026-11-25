@@ -9,6 +9,7 @@ sur le moteur procédural.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 
@@ -16,7 +17,23 @@ import httpx
 
 from .safety import contains_real_philosopher, scrub
 
-LLM_URL = "http://127.0.0.1:8090"
+# Fournisseur cloud anonyme par défaut : aucun compte ni clé personnelle.
+# Le backend contacte LLM Faucet ; ne jamais appeler ce service depuis le frontend.
+# AI_API_KEY accepte "free" (valeur publique documentée), pas une clé personnelle.
+LLM_URL = os.getenv("LLM_URL", "http://127.0.0.1:8090").rstrip("/")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "cloud").strip().lower()
+AI_API_KEY = os.getenv("AI_API_KEY", "free").strip()
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.llmfaucet.dev/v1").rstrip("/")
+AI_MODEL = os.getenv("AI_MODEL", "auto:smart").strip()
+_USE_CLOUD = AI_PROVIDER != "local"
+
+
+class LLMProviderError(RuntimeError):
+    """Le fournisseur IA configuré est indisponible ou a refusé la requête."""
+
+
+def cloud_configured() -> bool:
+    return _USE_CLOUD
 _HEALTH_TTL = 15.0  # secondes entre deux sondes de santé
 
 _health_ok: float | None = None  # timestamp du dernier état connu
@@ -221,7 +238,9 @@ def build_transform_prompt(
 
 
 def llm_available() -> bool:
-    """Sonde le serveur local (résultat mis en cache quelques secondes)."""
+    """Indique si un fournisseur cloud est configuré ou si le modèle local répond."""
+    if _USE_CLOUD:
+        return True
     global _health_ok, _health_state
     now = time.monotonic()
     if _health_ok is not None and now - _health_ok < _HEALTH_TTL:
@@ -246,12 +265,21 @@ def _chat(system: str, user: str, max_tokens: int, temperature: float,
         "temperature": temperature,
         "stream": False,
     }
+    if _USE_CLOUD:
+        payload["model"] = AI_MODEL
+        url = f"{AI_BASE_URL}/chat/completions"
+        headers = {"Authorization": f"Bearer {AI_API_KEY}"} if AI_API_KEY else {}
+    else:
+        url = f"{LLM_URL}/v1/chat/completions"
+        headers = {}
     try:
-        r = httpx.post(f"{LLM_URL}/v1/chat/completions", json=payload,
-                       timeout=timeout)
+        r = httpx.post(url, json=payload, headers=headers, timeout=timeout)
         r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-    except (httpx.HTTPError, KeyError, ValueError):
+        content = r.json()["choices"][0]["message"]["content"]
+        return content if isinstance(content, str) else None
+    except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
+        # L'appelant renverra une erreur explicite en mode cloud : aucun texte
+        # procédural ne doit masquer une panne du véritable moteur IA.
         return None
 
 

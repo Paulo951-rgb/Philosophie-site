@@ -340,7 +340,11 @@ def generate(
         payload["word_count"] = len(payload["text"].split())
         return payload
 
-    # 2. repli procédural si le modèle est indisponible
+    # En mode cloud configuré, ne jamais masquer une panne API par un faux texte procédural.
+    if llm.cloud_configured():
+        raise llm.LLMProviderError("Le fournisseur IA est indisponible. Vérifiez la clé, le modèle, le quota et réessayez.")
+
+    # 2. repli procédural uniquement pour le mode local sans fournisseur cloud.
     payload = _generate_procedural(clean_input, depth, exaggeration, styles,
                                    length, complexity, mode, seed)
     payload["prompt_details"] = spec.as_dict()
@@ -413,7 +417,11 @@ def transform(
             "word_count": len(llm_result["text"].split()),
         }
 
-    # 2. repli procédural
+    # En mode cloud, une erreur API doit être visible et non remplacée par un faux résultat.
+    if llm.cloud_configured():
+        raise llm.LLMProviderError("Le fournisseur IA est indisponible. Vérifiez la clé, le modèle, le quota et réessayez.")
+
+    # 2. repli procédural local
     rng = random.Random(seed)
     styles = [s for s in (styles or [DEFAULT_STYLE]) if s in STYLES][:2] or [DEFAULT_STYLE]
     new_text = apply_transform(action, previous_text, original_input, styles, rng)

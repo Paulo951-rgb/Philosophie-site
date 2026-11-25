@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import cards
 from .generation import lexicon, generate, transform
+from .generation.llm import LLMProviderError
 from .generation.engine import COMPLEXITY, DEPTH, EXAGGERATION, LENGTH_WORDS, MODES
 from .generation.styles import STYLES
 from .generation.transforms import TRANSFORM_ACTIONS
@@ -97,15 +98,18 @@ def api_meta():
 @app.post("/api/generate")
 def api_generate(req: GenerateRequest):
     req = req.validated()
-    result = generate(
-        input_text=req.input_text,
+    try:
+        result = generate(
+            input_text=req.input_text,
         depth=req.depth,
         exaggeration=req.exaggeration,
         styles=req.styles,
         length=req.length,
         complexity=req.complexity,
-        mode=req.mode,
-    )
+            mode=req.mode,
+        )
+    except LLMProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {
         "text": result["text"],
         "attribution": result.get("attribution"),
@@ -118,6 +122,7 @@ def api_generate(req: GenerateRequest):
             "complexity": req.complexity,
         },
         "word_count": result["word_count"],
+        "engine": result.get("engine", "llm"),
     }
 
 
@@ -132,6 +137,8 @@ def api_transform(req: TransformRequest):
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except LLMProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return result
 
 
