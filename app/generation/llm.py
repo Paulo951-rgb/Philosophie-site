@@ -24,6 +24,14 @@ AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
 AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
 AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b").strip()
 _USE_CLOUD = bool(AI_API_KEY)
+
+
+class LLMProviderError(RuntimeError):
+    """Le fournisseur IA configuré est indisponible ou a refusé la requête."""
+
+
+def cloud_configured() -> bool:
+    return _USE_CLOUD
 _HEALTH_TTL = 15.0  # secondes entre deux sondes de santé
 
 _health_ok: float | None = None  # timestamp du dernier état connu
