@@ -4,9 +4,9 @@ Transforme une phrase banale (« j'ai faim », « le bus est en retard ») en
 réflexion philosophique exagérément sérieuse — subtile ou totalement
 caricaturale.
 
-> **Objectif** : transformez n'importe quoi en traité de métaphysique.
-> Aucune clé d'API externe, aucun compte, entièrement gratuit : le moteur
-> est un vrai modèle de langage qui tourne sur votre machine.
+> **Objectif** : transformer n'importe quoi en traité de métaphysique.
+> Le site utilise par défaut un véritable modèle de langage distant via LLM Faucet :
+> aucun modèle à télécharger et aucune clé API personnelle à fournir.
 
 ## Fonctionnalités
 
@@ -24,14 +24,15 @@ caricaturale.
   filtre par style, favoris et vue galerie.
 - Thèmes sombre / clair / auto. Interface entièrement responsive.
 
-Le moteur principal est un **vrai modèle de langage local** : llama.cpp
-(`llama-server`) servant Qwen2.5-3B-Instruct (GGUF Q4, ~2 Go) sur le port
-8090. Aucune clé d'API, aucun service externe, aucune donnée ne quitte la
-machine. `app/generation/llm.py` construit les prompts à partir des 5
-paramètres + fiches de style + mode, post-traite la sortie (nettoyage
-markdown, filtre anti-attribution à de vrais philosophes) et retombe
-automatiquement sur le moteur procédural (`engine.py`) si le modèle est
-indisponible.
+Le moteur principal est un **véritable modèle de langage cloud** via
+[LLM Faucet](https://llmfaucet.dev), une passerelle compatible OpenAI qui route
+vers des fournisseurs anonymes/keyless. Le backend appelle
+`https://api.llmfaucet.dev/v1` avec le modèle `auto:smart` : aucun modèle
+n'est téléchargé sur l'ordinateur et aucune clé API personnelle n'est requise.
+`app/generation/llm.py` construit les prompts à partir des paramètres et des
+styles, puis nettoie et sécurise la réponse. En mode cloud, une panne du
+fournisseur renvoie une erreur explicite : le générateur procédural ne fabrique
+jamais de résultat à la place de l'IA.
 
 ## Lancement
 
@@ -56,16 +57,17 @@ vitesse).
 
 | Variable | Défaut | Description |
 |---|---|---|
-| AI_API_KEY | vide | Clé API Groq ou fournisseur compatible — secret serveur |
-| AI_BASE_URL | https://api.groq.com/openai/v1 | URL API compatible OpenAI |
-| AI_MODEL | openai/gpt-oss-120b | Identifiant du modèle distant |
-| LLM_URL | http://127.0.0.1:8090 | URL llama.cpp local |
+| AI_PROVIDER | cloud | `cloud` (défaut) ou `local` pour llama.cpp |
+| AI_API_KEY | free | Valeur publique documentée par LLM Faucet ; aucune clé personnelle |
+| AI_BASE_URL | https://api.llmfaucet.dev/v1 | URL de la passerelle compatible OpenAI |
+| AI_MODEL | auto:smart | Routage automatique vers un modèle adapté |
+| LLM_URL | http://127.0.0.1:8090 | URL llama.cpp si `AI_PROVIDER=local` |
 | `LLAMA_BIN` | `/workspace/llama/llama-b10632/llama-server` | Chemin du binaire llama.cpp |
 | `MODEL` | `/workspace/models/qwen2.5-3b-instruct-q4_k_m.gguf` | Chemin du modèle GGUF |
 | `LLAMA_PORT` | `8090` | Port du serveur de génération |
 | `APP_PORT` | `12000` | Port de l'application FastAPI |
 
-Pour activer l’IA cloud, définissez AI_API_KEY, AI_BASE_URL et AI_MODEL dans les variables d’environnement de votre hébergeur. Obtenez une clé sur https://console.groq.com/keys. Ne placez jamais la clé dans le JavaScript ni dans Git. Les API gratuites ont des quotas et ne sont pas illimitées.
+Le mode cloud est activé par défaut : sur votre hébergeur, aucune variable n'est nécessaire pour commencer. Vous pouvez laisser les valeurs par défaut ou définir `AI_BASE_URL`, `AI_MODEL` et éventuellement `AI_API_KEY` dans les variables d'environnement du backend. N'exposez jamais ces variables au JavaScript. L'offre anonyme LLM Faucet annonce actuellement 20 requêtes par jour et par IP ; elle est expérimentale et sa capacité peut changer ou disparaître. Pour un site public, prévoyez donc un quota applicatif et un fournisseur plus robuste si l'audience augmente.
 
 Ouvrir http://localhost:12000
 
@@ -105,14 +107,15 @@ l'entrée utilisateur. Les cartes du mode Citation portent un badge
 « citation humoristique · attribution fictive ».
 
 
-## IA cloud (configuration recommandée pour un hébergement web)
+## IA cloud sans clé personnelle
 
-Le site accepte un fournisseur d'IA compatible avec l'API OpenAI. Groq est le fournisseur par défaut :
+Le fournisseur par défaut est LLM Faucet :
 
-- `AI_API_KEY` : clé API secrète créée sur https://console.groq.com/keys
-- `AI_BASE_URL` : `https://api.groq.com/openai/v1`
-- `AI_MODEL` : `openai/gpt-oss-120b`
+- Base URL : `https://api.llmfaucet.dev/v1`
+- Modèle : `auto:smart`
+- Valeur d'authentification publique : `free` (pas de clé personnelle)
+- Endpoint utilisé : `POST /chat/completions`
 
-Définissez ces variables dans les secrets/variables d'environnement de l'hébergeur FastAPI. **Ne mettez jamais la clé dans le JavaScript, dans le dépôt Git ou dans une variable publique du frontend.**
+Le backend relaie les requêtes : aucune URL ni donnée d'authentification n'est exposée dans le navigateur. LLM Faucet annonce un quota anonyme de 20 requêtes par jour et par IP et précise que le service est expérimental. Les visiteurs d'un même déploiement partagent donc potentiellement le quota de l'adresse IP du serveur. Ce fournisseur convient à un prototype/démonstrateur, pas à un service public dont la disponibilité doit être garantie.
 
-Le forfait gratuit de Groq est limité par des quotas de requêtes et de tokens : aucune API gratuite n'est illimitée. Quand une API cloud est configurée, une erreur du fournisseur (clé invalide, modèle indisponible, quota dépassé) renvoie une erreur HTTP 503 explicite ; elle ne déclenche pas le faux générateur procédural. Sans clé cloud, le fonctionnement local historique reste disponible.
+Pour utiliser un serveur llama.cpp local à la place : définir `AI_PROVIDER=local`. Si le fournisseur cloud est indisponible ou atteint son quota, l'API renvoie HTTP 503 ; elle ne bascule jamais vers les textes préfabriqués.
