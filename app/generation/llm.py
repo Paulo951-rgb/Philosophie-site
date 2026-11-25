@@ -17,13 +17,15 @@ import httpx
 
 from .safety import contains_real_philosopher, scrub
 
-# API cloud OpenAI-compatible (Groq par défaut) ou llama.cpp local.
-# La clé reste exclusivement côté serveur : ne jamais l'exposer au frontend.
+# Fournisseur cloud anonyme par défaut : aucun compte ni clé personnelle.
+# Le backend contacte LLM Faucet ; ne jamais appeler ce service depuis le frontend.
+# AI_API_KEY accepte "free" (valeur publique documentée), pas une clé personnelle.
 LLM_URL = os.getenv("LLM_URL", "http://127.0.0.1:8090").rstrip("/")
-AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
-AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
-AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b").strip()
-_USE_CLOUD = bool(AI_API_KEY)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "cloud").strip().lower()
+AI_API_KEY = os.getenv("AI_API_KEY", "free").strip()
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.llmfaucet.dev/v1").rstrip("/")
+AI_MODEL = os.getenv("AI_MODEL", "auto:smart").strip()
+_USE_CLOUD = AI_PROVIDER != "local"
 
 
 class LLMProviderError(RuntimeError):
@@ -266,7 +268,7 @@ def _chat(system: str, user: str, max_tokens: int, temperature: float,
     if _USE_CLOUD:
         payload["model"] = AI_MODEL
         url = f"{AI_BASE_URL}/chat/completions"
-        headers = {"Authorization": f"Bearer {AI_API_KEY}"}
+        headers = {"Authorization": f"Bearer {AI_API_KEY}"} if AI_API_KEY else {}
     else:
         url = f"{LLM_URL}/v1/chat/completions"
         headers = {}
@@ -276,6 +278,8 @@ def _chat(system: str, user: str, max_tokens: int, temperature: float,
         content = r.json()["choices"][0]["message"]["content"]
         return content if isinstance(content, str) else None
     except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
+        # L'appelant renverra une erreur explicite en mode cloud : aucun texte
+        # procédural ne doit masquer une panne du véritable moteur IA.
         return None
 
 
