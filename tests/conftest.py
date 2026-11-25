@@ -14,8 +14,11 @@ from app.generation import llm
 def _llm_indisponible():
     """Pré-remplit le cache de santé : sonde négative, comme si le serveur
     de modèle était arrêté."""
+    original_cloud = llm._USE_CLOUD
+    llm._USE_CLOUD = False
     llm._health_ok = time.monotonic()
     llm._health_state = False
     yield
+    llm._USE_CLOUD = original_cloud
     llm._health_ok = None
     llm._health_state = False
