@@ -56,13 +56,16 @@ vitesse).
 
 | Variable | Défaut | Description |
 |---|---|---|
+| AI_API_KEY | vide | Clé API Groq ou fournisseur compatible — secret serveur |
+| AI_BASE_URL | https://api.groq.com/openai/v1 | URL API compatible OpenAI |
+| AI_MODEL | openai/gpt-oss-120b | Identifiant du modèle distant |
+| LLM_URL | http://127.0.0.1:8090 | URL llama.cpp local |
 | `LLAMA_BIN` | `/workspace/llama/llama-b10632/llama-server` | Chemin du binaire llama.cpp |
 | `MODEL` | `/workspace/models/qwen2.5-3b-instruct-q4_k_m.gguf` | Chemin du modèle GGUF |
 | `LLAMA_PORT` | `8090` | Port du serveur de génération |
 | `APP_PORT` | `12000` | Port de l'application FastAPI |
 
-Sans modèle, l'application fonctionne en mode procédural dégradé (le site
-est utilisable, sans le style d'un vrai modèle).
+Pour activer l’IA cloud, définissez AI_API_KEY, AI_BASE_URL et AI_MODEL dans les variables d’environnement de votre hébergeur. Obtenez une clé sur https://console.groq.com/keys. Ne placez jamais la clé dans le JavaScript ni dans Git. Les API gratuites ont des quotas et ne sont pas illimitées.
 
 Ouvrir http://localhost:12000
 
